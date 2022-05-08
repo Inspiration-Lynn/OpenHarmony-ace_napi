@@ -1,0 +1,198 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+if (defined(ohos_lite)) {
+  import("//build/lite/config/component/lite_component.gni")
+  import("//build/lite/config/subsystem/aafwk/config.gni")
+  import("//build/lite/config/test.gni")
+
+  test_output_root = "$root_out_dir/test/unittest/jsfwk"
+
+  executable("test_jerryscript_unittest") {
+    output_extension = "bin"
+    output_dir = test_output_root
+
+    include_dirs = [
+      "//utils/native/base/include",
+      "//third_party/node/src",
+      "//foundation/ace/napi",
+      "//foundation/ace/napi/interfaces/kits",
+      "//third_party/googletest/include",
+      "//foundation/ace/napi/native_engine",
+      "//foundation/ace/napi/native_engine/impl/jerryscript",
+    ]
+
+    cflags = [ "-g3" ]
+
+    sources = [
+      "test_jerryscript.cpp",
+      "test_napi.cpp",
+    ]
+
+    deps = [
+      "//base//hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//foundation/ace/napi/:ace_napi",
+      "//foundation/ace/napi/:ace_napi_jerryscript",
+      "//test/developertest/third_party/lib/cpp:gtest_main",
+      "//third_party/jerryscript/jerry-core:jerry-core_shared",
+      "//third_party/jerryscript/jerry-ext:jerry-ext_shared",
+      "//third_party/jerryscript/jerry-port/default:jerry-port-default_shared",
+    ]
+  }
+
+  group("unittest") {
+    deps = [ ":test_jerryscript_unittest" ]
+  }
+} else {
+  import("//build/test.gni")
+  import("//foundation/ace/ace_engine/ace_config.gni")
+  import("//foundation/ace/napi/test/unittest/ut.gni")
+
+  if (is_standard_system) {
+    module_output_path = "ace_engine_standard/napi"
+  } else {
+    module_output_path = "ace_engine_full/napi"
+  }
+
+  ark_support = false
+  qjs_support = false
+
+  foreach(item, ace_platforms) {
+    if (item.name == "ohos") {
+      engine_config = item.config
+      support_engines = engine_config.js_engines
+      foreach(engine, support_engines) {
+        if (engine.engine_name == "ark") {
+          ark_support = true
+        } else if (engine.engine_name == "qjs") {
+          qjs_support = true
+        }
+      }
+    }
+  }
+
+  if (qjs_support) {
+    ohos_unittest("test_quickjs_unittest") {
+      module_out_path = module_output_path
+
+      include_dirs = quickjs_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "engine/test_quickjs.cpp",
+        "test_napi.cpp",
+      ]
+
+      deps = quickjs_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      }
+    }
+
+    ohos_unittest("test_quickjs_unittest_ext") {
+      module_out_path = module_output_path
+
+      include_dirs = quickjs_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "./engine/test_quickjs.cpp",
+        "test_napi_ext.cpp",
+      ]
+
+      deps = quickjs_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      }
+    }
+
+    ohos_unittest("test_quickjs_unittest_threadsafe") {
+      module_out_path = module_output_path
+
+      include_dirs = quickjs_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "engine/test_quickjs.cpp",
+        "test_napi_threadsafe.cpp",
+      ]
+
+      deps = quickjs_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      }
+    }
+
+    ohos_unittest("test_quickjs_unittest_instance_data") {
+      module_out_path = module_output_path
+
+      include_dirs = quickjs_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "engine/test_quickjs.cpp",
+        "test_instance_data.cpp",
+      ]
+
+      deps = quickjs_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      }
+    }
+  }
+
+  if (ark_support) {
+    ohos_unittest("test_ark_unittest") {
+      module_out_path = module_output_path
+
+      configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
+
+      include_dirs = ark_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "engine/test_ark.cpp",
+        "test_napi.cpp",
+      ]
+
+      deps = ark_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      } else {
+        external_deps = [ "hilog:libhilog" ]
+      }
+    }
+  }
+
+  group("unittest") {
+    testonly = true
+    deps = []
+    if (qjs_support) {
+      deps += [
+        ":test_quickjs_unittest",
+        ":test_quickjs_unittest_ext",
+        ":test_quickjs_unittest_threadsafe",
+      ]
+    }
+  }
+}
